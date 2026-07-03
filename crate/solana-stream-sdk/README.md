@@ -41,8 +41,7 @@ This SDK provides a simple and efficient way to connect to Shredstream service a
 
 If you have **ERPC Dedicated Shreds**, you can forward raw Shreds over UDP to your own listener.
 This is Solana’s fastest observation layer—before Geyser gRPC and far ahead of RPC/WebSocket.
-The SDK includes a simple Rust sample; pump.fun is used only because it’s the most common
-question we get.
+The SDK includes a simple Rust sample; use the `generic_logger` binary to watch any program of your choice.
 
 ### Why this is the fastest path
 
@@ -58,12 +57,12 @@ Note: the shared Shreds gRPC endpoint runs over TCP, so it’s slower than UDP S
 
 ### Try it with Solana Stream SDK
 
-- Sample code (`shreds-udp-rs`, Rust): pump.fun is just a common example—swap in your own target.  
+- Sample code (`shreds-udp-rs`, Rust): set any program of your own as the watch target.  
   https://github.com/ValidatorsDAO/solana-stream/tree/main/temp-release/shreds-udp-rs
 - Quick start (local): configure `settings.jsonc`, set env like `SOLANA_RPC_ENDPOINT`, then run
   `cargo run -p shreds-udp-rs`
 - Dedicated Shreds users: point your Shreds sender to the sample’s `ip:port` to see detections.
-- Not on UDP yet? Run it locally or on your own server to explore logs and customize hooks.
+- Not on UDP yet? Run it locally or on your own server to explore logs and customize handlers.
 
 ### UDP deshred decode troubleshooting
 
@@ -77,11 +76,11 @@ UDP packet sizes around 1203/1228 bytes are normal Merkle shred sizes and do not
 indicate truncation. If packets arrive but every deshred fails with the errors above, update the
 SDK/example before tuning socket buffers or firewall rules.
 
-### Pump.fun example log
+### Example log
 
-![pump.fun hits over UDP Shreds](https://storage.validators.solutions/SolanaStreamSDKUDPClientExample.jpg)
+![program hits over UDP Shreds](https://storage.validators.solutions/SolanaStreamSDKUDPClientExample.jpg)
 
-This example comes from the SDK sample; clone and run it to see hits, or swap in your own target.
+This example comes from the SDK sample; clone and run it to see hits with your own watch target.
 
 ## Installation
 
@@ -232,15 +231,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### UDP pipeline helpers (shreds-udp)
 
 - Layered flow (5 layers): 1) UDP receive/prefilter → 2) FEC buffer → 3) deshred → 4) watcher/detailer → 5) sink (log/hook).
-- `handle_pumpfun_watcher`: one-call convenience with pump.fun defaults (watcher + detailer); wrapper over these stages.
+- `handle_pumpfun_watcher`: one-call convenience wrapper over these stages (legacy default watcher; set your own watch IDs).
 - `decode_udp_datagram` + `insert_shred`: tap the pipeline before logging; `ShredInsertOutcome` reports ready/gated/buffered shreds.
 - `deshred_shreds_to_entries`: convert a ready batch; `collect_watch_events`: structured watch hits without emitting logs.
-- `ShredsUdpConfig::watch_config_no_defaults()`: avoid pump.fun fallbacks; pass your own `MintFinder`/`MintDetailer` via `ProgramWatchConfig`.
+- `ShredsUdpConfig::watch_config_no_defaults()`: define your own watch set; pass your own `MintFinder`/`MintDetailer` via `ProgramWatchConfig`.
 - `ShredsUdpState::{remove_batch, mark_completed, mark_suppressed}`: mirror default cleanup.
-- Pump.fun SOL values in shreds-udp are instruction limits (max for buy/create, min for sell); actual fills require event/meta data (e.g., Geyser/RPC).
-- Pump.fun-free sample: `cargo run -p shreds-udp-rs --bin generic_logger` (set `GENERIC_WATCH_PROGRAM_IDS` / `GENERIC_WATCH_AUTHORITIES` to watch your own programs).
+- SOL values in shreds-udp are instruction limits; actual fills require event/meta data (e.g., Geyser/RPC).
+- Generic sample: `cargo run -p shreds-udp-rs --bin generic_logger` (set `GENERIC_WATCH_PROGRAM_IDS` / `GENERIC_WATCH_AUTHORITIES` to watch your own programs).
 
-Why modular? Many users want to do more than print logs (e.g., push to a queue or enrich hits). The layered functions let you plug a custom sink right after detection (`collect_watch_events`), while `handle_pumpfun_watcher` stays available for quick, pump.fun-ready runs.
+Why modular? Many users want to do more than print logs (e.g., push to a queue or enrich hits). The layered functions let you plug a custom sink right after detection (`collect_watch_events`), while `handle_pumpfun_watcher` stays available for quick one-call runs.
 
 ### Basic Example (Geyser gRPC)
 
